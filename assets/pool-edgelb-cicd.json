@@ -1,0 +1,64 @@
+{
+  "apiVersion": "V2",
+  "name": "cicd-lb",
+  "namespace":"dcos-edgelb/pools",
+  "count": 1,
+  "ports": [80,443],
+  "secrets": [
+    {
+      "secret": "dcos-edgelb/certificate",
+      "file": "mysecretfile1"
+    }
+  ],
+  "haproxy": {
+    "frontends": [{
+      "bindPort": 80,
+      "protocol": "HTTP",
+      "redirectToHttps": {}
+    },
+    {
+      "bindPort": 443,
+      "protocol": "TLS",
+      "certificates": [
+        "$SECRETS/mysecretfile1"
+      ],
+      "linkBackend": {
+        "map": [
+          {
+            "hostEq": "jenkins.yourdomain.com",
+            "backend": "jenkins-backend"
+          },
+          {
+            "hostEq": "sonar.yourdomain.com",
+            "backend": "sonar-backend"
+          }
+        ]
+      }
+    }
+  ],
+    "backends": [{
+      "name": "sonar-backend",
+      "protocol": "HTTP",
+      "services": [{
+        "marathon": {
+          "serviceID": "/cicd/sonar"
+        },
+        "endpoint": {
+          "portName": "sonar"
+        }
+      }]
+    },
+    {
+      "name": "jenkins-backend",
+      "protocol": "HTTP",
+      "services": [{
+        "marathon": {
+          "serviceID": "/cicd/jenkins"
+        },
+        "endpoint": {
+          "portName": "nginx"
+        }
+      }]
+    }]
+  }
+}
